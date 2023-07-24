@@ -47,6 +47,7 @@ const run = async () => {
     // Collections
     const usersCollection = client.db("CollegeFacilityHub").collection("users");
     const collegesCollection = client.db("CollegeFacilityHub").collection("colleges");
+    const admissionCollection = client.db("CollegeFacilityHub").collection("admission");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -129,6 +130,21 @@ const run = async () => {
     app.get("/colleges", async (req, res) => {
       const colleges = await collegesCollection.find({}).limit(20).toArray();
       res.send(colleges);
+    });
+
+    // Assuming you have imported the necessary dependencies and set up the MongoDB connection
+
+    app.post("/admission", async (req, res) => {
+      const admissionData = req.body;
+
+      try {
+        const result = await admissionCollection.insertOne(admissionData);
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error inserting admission data:", error);
+        return res.status(500).json({ error: "Error inserting admission data" });
+      }
     });
 
     // Send a ping to confirm a successful connection
