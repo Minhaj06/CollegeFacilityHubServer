@@ -46,11 +46,7 @@ const run = async () => {
 
     // Collections
     const usersCollection = client.db("CollegeFacilityHub").collection("users");
-    const classesCollection = client.db("CollegeFacilityHub").collection("classes");
-    const instructorsCollection = client.db("CollegeFacilityHub").collection("instructors");
-    const selectedClassesCollection = client
-      .db("CollegeFacilityHub")
-      .collection("selectedClasses");
+    const collegesCollection = client.db("CollegeFacilityHub").collection("colleges");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -59,54 +55,7 @@ const run = async () => {
       res.send({ token });
     });
 
-    // Verify Student
-    const verifyStudent = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      if (user?.role !== "student") {
-        return res.status(403).send({ error: true, message: "Forbidden message" });
-      }
-      next();
-    };
-    // Check Student
-    app.get("/student-check", verifyJWT, verifyStudent, async (req, res) => {
-      res.json({ ok: true });
-    });
-
-    // Verify Instructor
-    const verifyInstructor = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      if (user?.role !== "instructor") {
-        return res.status(403).send({ error: true, message: "Forbidden message" });
-      }
-      next();
-    };
-    // Check Instructor
-    app.get("/instructor-check", verifyJWT, verifyInstructor, async (req, res) => {
-      res.json({ ok: true });
-    });
-
-    // Verify Admin
-    const verifyAdmin = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      if (user?.role !== "admin") {
-        return res.status(403).send({ error: true, message: "Forbidden message" });
-      }
-      next();
-    };
-
-    // Check Admin
-    app.get("/admin-check", verifyJWT, verifyAdmin, async (req, res) => {
-      res.json({ ok: true });
-    });
-
     // Users API'S
-
     // Read
     app.get("/user/:email", async (req, res) => {
       const { email } = req.params;
@@ -158,174 +107,28 @@ const run = async () => {
       }
     });
 
-    // Update User Role By Admin
-    app.patch("/users/role/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { role } = req.body;
-        const result = await usersCollection.updateOne(
-          { _id: new ObjectId(id) },
-          {
-            $set: {
-              role: role,
-            },
-          }
-        );
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
     // User List
-    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const users = await usersCollection.find({}).limit(20).toArray();
 
       res.send(users);
     });
 
-    // Classes API'S
-    app.get("/classes", async (req, res) => {
-      const classes = await classesCollection.find({}).limit(20).toArray();
-      res.send(classes);
-    });
-
-    app.post("/classes", verifyJWT, verifyInstructor, async (req, res) => {
-      const classItem = req.body;
-      const result = await classesCollection.insertOne(classItem);
-      res.send(result);
-    });
-
-    // Class By Id
-    app.get("/classes/:id", async (req, res) => {
+    app.get("/college/:id", async (req, res) => {
       const { id } = req.params;
-      const classes = await classesCollection.findOne({ _id: new ObjectId(id) });
-      res.send(classes);
-    });
 
-    // Update
-    app.put("/classes/:id", verifyJWT, verifyInstructor, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const classItem = req.body;
-        const result = await classesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: classItem },
-          { upsert: true }
-        );
-        res.send(result);
-      } catch (error) {
-        console.log(error);
+      const college = await collegesCollection.findOne({ _id: new ObjectId(id) });
+
+      if (!college) {
+        return res.status(404).send({ message: "college not found" });
       }
+      res.send(college);
     });
 
-    // Class Status Update By Admin
-    app.patch("/classes/status/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { status } = req.body;
-        const result = await classesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          {
-            $set: {
-              status: status,
-            },
-          }
-        );
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    // Send feedback for denying class by admin
-    app.post("/classes/feedback/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { feedback } = req.body;
-        const result = await classesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          {
-            $set: {
-              feedback: feedback,
-            },
-          },
-          { upsert: true }
-        );
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    // Delete
-    app.delete("/classes/:id", verifyJWT, verifyInstructor, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const result = await classesCollection.deleteOne({ _id: new ObjectId(id) });
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    // Class By Instructor Email
-    app.get("/instructors/classes/:email", async (req, res) => {
-      const { email } = req.params;
-      const classes = await classesCollection
-        .find({ instructorEmail: email })
-        .limit(20)
-        .toArray();
-      res.send(classes);
-    });
-
-    app.get("/instructors", async (req, res) => {
-      const instructors = await instructorsCollection.find({}).limit(12).toArray();
-      res.send(instructors);
-    });
-
-    // Selected Class API
-    app.post("/selected-classes", verifyJWT, async (req, res) => {
-      try {
-        const selectedClass = req.body;
-
-        const result = await selectedClassesCollection.insertOne(selectedClass);
-
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-        res.send({ error: true });
-      }
-    });
-
-    // Seleted Classes List
-    app.get("/selected-classes", verifyJWT, async (req, res) => {
-      try {
-        const studentEmail = req.decoded.email;
-        const selectedClasses = await selectedClassesCollection
-          .find({ studentEmail })
-          .limit(20)
-          .toArray();
-        res.send(selectedClasses);
-      } catch (error) {
-        console.log(error);
-        res.send({ error: true });
-      }
-    });
-
-    // Seleted Classes List
-    app.delete("/selected-classes/:id", verifyJWT, async (req, res) => {
-      try {
-        const { id } = req.params;
-
-        const result = await selectedClassesCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-        res.send({ error: true });
-      }
+    /*==================Colleges API's====================*/
+    app.get("/colleges", async (req, res) => {
+      const colleges = await collegesCollection.find({}).limit(20).toArray();
+      res.send(colleges);
     });
 
     // Send a ping to confirm a successful connection
