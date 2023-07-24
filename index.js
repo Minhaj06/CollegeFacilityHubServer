@@ -115,6 +115,12 @@ const run = async () => {
       res.send(users);
     });
 
+    /*==================Colleges API's====================*/
+    app.get("/colleges", async (req, res) => {
+      const colleges = await collegesCollection.find({}).limit(20).toArray();
+      res.send(colleges);
+    });
+
     app.get("/college/:id", async (req, res) => {
       const { id } = req.params;
 
@@ -126,10 +132,14 @@ const run = async () => {
       res.send(college);
     });
 
-    /*==================Colleges API's====================*/
-    app.get("/colleges", async (req, res) => {
-      const colleges = await collegesCollection.find({}).limit(20).toArray();
-      res.send(colleges);
+    app.get("/college/search/:keyword", async (req, res) => {
+      const { keyword } = req.params;
+
+      const result = await collegesCollection
+        .find({ name: { $regex: keyword, $options: "i" } })
+        .toArray();
+
+      res.send(result);
     });
 
     // Assuming you have imported the necessary dependencies and set up the MongoDB connection
@@ -141,6 +151,17 @@ const run = async () => {
         const result = await admissionCollection.insertOne(admissionData);
 
         res.send(result);
+      } catch (error) {
+        console.error("Error inserting admission data:", error);
+        return res.status(500).json({ error: "Error inserting admission data" });
+      }
+    });
+
+    app.get("/admission/:email", async (req, res) => {
+      const { email } = req.params;
+      try {
+        const admission = await admissionCollection.findOne({ email });
+        res.send(admission);
       } catch (error) {
         console.error("Error inserting admission data:", error);
         return res.status(500).json({ error: "Error inserting admission data" });
