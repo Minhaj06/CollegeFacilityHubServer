@@ -48,6 +48,7 @@ const run = async () => {
     const usersCollection = client.db("CollegeFacilityHub").collection("users");
     const collegesCollection = client.db("CollegeFacilityHub").collection("colleges");
     const admissionCollection = client.db("CollegeFacilityHub").collection("admission");
+    const reviewsCollection = client.db("CollegeFacilityHub").collection("reviews");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -165,6 +166,20 @@ const run = async () => {
       } catch (error) {
         console.error("Error inserting admission data:", error);
         return res.status(500).json({ error: "Error inserting admission data" });
+      }
+    });
+
+    /*============= Review ==============*/
+    app.post("/review", async (req, res) => {
+      const { review, rating } = req.body;
+
+      try {
+        const result = await admissionCollection.insertOne({ review, rating });
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error inserting review data:", error);
+        return res.status(500).json({ error: "Error inserting review data" });
       }
     });
 
